@@ -2,9 +2,7 @@ import { Card, Center, Image, SimpleGrid, Space, Text } from "@mantine/core";
 import type { StimulusPair } from "../../lib/stimulus";
 
 interface TrialProps {
-  /**
-   * The pair of images to display for this trial.
-   */
+  /** The pair of images to display for this trial */
   stimulus: StimulusPair;
 
   /**

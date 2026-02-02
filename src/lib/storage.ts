@@ -1,8 +1,6 @@
 import { getSupabaseAdmin } from "./supabase";
 
-/**
- * A single stimulus entry in database/storage
- */
+/** A single stimulus entry in database/storage */
 export interface Stimulus {
   id: string;
   set_id: string;
@@ -11,9 +9,7 @@ export interface Stimulus {
   name: string;
 }
 
-/**
- * A set of stimuli in database/storage
- */
+/** A set of stimuli in database/storage */
 export interface StimuliSet {
   set_id: string;
   set_name: string;

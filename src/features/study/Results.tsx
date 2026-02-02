@@ -1,12 +1,35 @@
-import { Center, Container, Stack, Text, Title } from "@mantine/core";
+import { Center, Container, Stack, Title } from "@mantine/core";
+import { useEffect, useState } from "react";
+import {
+  fetchResults,
+  type ParticipantResults,
+} from "../../lib/participant_results";
+import { ResultsCard } from "./ResultsCard";
 
-//TODO: Add props for results information
+interface ResultsProps {
+  /** Session ID of user to fetch statistics for */
+  session: string;
+}
 
 /**
  * Results page displayed after survey completion
- * * TODO: show users score
+ * @component
  */
-export function Results() {
+export function Results({ session }: ResultsProps) {
+  const [data, setData] = useState<ParticipantResults | null>(null);
+
+  useEffect(() => {
+    const loadResults = async () => {
+      const results = await fetchResults(session);
+      if (results) {
+        setData(results);
+      } else {
+        alert("An error occured while trying to fetch your results!");
+      }
+    };
+    loadResults();
+  }, [session]);
+
   return (
     <>
       <header style={{ background: "white" }}>
@@ -19,10 +42,7 @@ export function Results() {
       <main>
         <Container size="sm" px="md">
           <Stack align="center" gap="md">
-            <Text>
-              Eventually, this page will show you your results and score based
-              on test performance.
-            </Text>
+            <ResultsCard data={data}></ResultsCard>
           </Stack>
         </Container>
       </main>

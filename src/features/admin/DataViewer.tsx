@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Container,
   Flex,
@@ -14,7 +15,7 @@ import { getSupabaseAdmin } from "../../lib/supabase";
  * Displays all response data (latest first) and allows downloads in csv format
  * @component
  */
-export function StudyData() {
+export function DataViewer() {
   const [loading, setLoading] = useState<boolean>(false);
   // TODO: Change this once we have a solidified set of collected info
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,21 +154,22 @@ export function StudyData() {
           withPages={true}
         />
       </Flex>
-
-      <Table>
+      <Box pos="relative" mih={200}>
         <LoadingOverlay visible={loading} />
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Created At</Table.Th>
-            <Table.Th>Session ID</Table.Th>
-            <Table.Th>Set</Table.Th>
-            <Table.Th>Left</Table.Th>
-            <Table.Th>Right</Table.Th>
-            <Table.Th>Selected Answer</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Created At</Table.Th>
+              <Table.Th>Session ID</Table.Th>
+              <Table.Th>Set</Table.Th>
+              <Table.Th>Left</Table.Th>
+              <Table.Th>Right</Table.Th>
+              <Table.Th>Selected Answer</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>{rows}</Table.Tbody>
+        </Table>
+      </Box>
     </Container>
   );
 }

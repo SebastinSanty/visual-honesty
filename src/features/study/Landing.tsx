@@ -1,15 +1,11 @@
 import { Button, Center, Container, Stack, Text, Title } from "@mantine/core";
 
 interface LandingProps {
-  /**
-   * Callback to start the survey
-   */
+  /** Callback to start the survey */
   handleStart: () => void;
 }
 
-/**
- * Landing page displayed before starting the survey
- */
+/** Landing page displayed before starting the survey */
 export function Landing({ handleStart }: LandingProps) {
   return (
     <>
