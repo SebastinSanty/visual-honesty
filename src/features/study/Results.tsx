@@ -1,17 +1,10 @@
-import {
-  Center,
-  Container,
-  Group,
-  Paper,
-  Stack,
-  Text,
-  Title,
-} from "@mantine/core";
+import { Center, Container, Stack, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
 import {
   fetchResults,
   type ParticipantResults,
 } from "../../lib/participant_results";
+import { ResultsCard } from "./ResultsCard";
 
 interface ResultsProps {
   /** Session ID of user to fetch statistics for */
@@ -20,6 +13,7 @@ interface ResultsProps {
 
 /**
  * Results page displayed after survey completion
+ * @component
  */
 export function Results({ session }: ResultsProps) {
   const [data, setData] = useState<ParticipantResults | null>(null);
@@ -48,32 +42,7 @@ export function Results({ session }: ResultsProps) {
       <main>
         <Container size="sm" px="md">
           <Stack align="center" gap="md">
-            {data ? (
-              <Paper p="xl" radius="md" withBorder w="75%">
-                <Stack gap="lg">
-                  <Group justify="space-between">
-                    <Text fw={500}>Total Questions Answered:</Text>
-                    <Text size="lg" fw={700}>
-                      {data.total_questions}
-                    </Text>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text fw={500}>Correct Answers:</Text>
-                    <Text size="lg" fw={700}>
-                      {data.correct_answers}
-                    </Text>
-                  </Group>
-                  <Group justify="space-between">
-                    <Text fw={500}>Percentage Correct:</Text>
-                    <Text size="lg" fw={700}>
-                      {data.accuracy_percentage.toFixed(1)}%
-                    </Text>
-                  </Group>
-                </Stack>
-              </Paper>
-            ) : (
-              <></>
-            )}
+            <ResultsCard data={data}></ResultsCard>
           </Stack>
         </Container>
       </main>

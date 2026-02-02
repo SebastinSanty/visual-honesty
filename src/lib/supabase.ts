@@ -8,17 +8,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase URL or Anon Key in .env.local");
 }
 
-/**
- * Supabase client for sending and retrieving participant data.
- */
+/** Supabase client for sending and retrieving participant data. */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Admin singleton
+/** Supabase admin client singleton */
 let adminClient: SupabaseClient | null = null;
 
-/**
- * Supabase client for sending and retrieving admin data.
- */
+/** Supabase client for sending and retrieving admin data. */
 export const getSupabaseAdmin = () => {
   if (adminClient) return adminClient;
 

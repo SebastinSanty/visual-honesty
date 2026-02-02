@@ -42,6 +42,7 @@ export interface StimulusPair {
 
 /**
  * Fetches a random pair of honest/deceptive images that the user has not seen yet.
+ * @param sessionId - unique id of current participant (prevents fetching already-seen pairs)
  * @returns the next StimulusPair if available, or null if there are none
  */
 export const fetchNextPair = async (
@@ -65,7 +66,10 @@ export const fetchNextPair = async (
 };
 
 /**
- * Submits particiapnt choice to Supabase
+ * Submits participant choice to Supabase
+ * @param sessionId - unique participant id
+ * @param stimulus - the image pair shown the the participant
+ * @param selectedSide - which side the participant chose as "deceptive"
  */
 export const submitResponse = async (
   sessionId: string,

@@ -1,27 +1,42 @@
 import { getSupabaseAdmin } from "./supabase";
 
+/** Statistics for a given honest/deceptive pair of stimuli from the same set */
 export interface PairStat {
+  /** Unique set id */
   set_id: string;
+  /** Admin-specified set name */
   set_name: string;
 
+  /** Admin-specified honest stimulus name */
   honest_name: string;
+  /** Honest stimulus URL */
   honest_url: string;
 
+  /** Admin-specified deceptive stimulus name */
   deceptive_name: string;
+  /** Deceptive stimulus URL */
   deceptive_url: string;
 
+  /** Total number of data points for this pair */
   total_responses: number;
+  /** Total number of correct responses for this pair */
   correct_count: number;
+  /** Rounded percentage of correct responses */
   accuracy_percent: number;
 }
 
+/** Statistics for every pair of stumuli in a given set */
 export interface SetStats {
   set_id: string;
   set_name: string;
   rows: PairStat[];
 }
 
-export const fetchStats = async () => {
+/**
+ * Gets the latest overall stats for all pairs from Supabase
+ * @returns Promise<SetStats[]> - An array containing SetStats for each stimuli set
+ */
+export const fetchStats = async (): Promise<SetStats[]> => {
   const supabase = getSupabaseAdmin();
 
   const { data: stats, error } = await supabase.from("pair_stats").select("*");
@@ -35,6 +50,7 @@ export const fetchStats = async () => {
   }
 
   if (stats) {
+    // Group data into SetStat and then put into array
     const grouped = stats.reduce<Record<string, SetStats>>((acc, row) => {
       if (!acc[row.set_id]) {
         acc[row.set_id] = {
@@ -43,17 +59,18 @@ export const fetchStats = async () => {
           rows: [],
         };
       }
-
-      // Push the current stats row into the correct Set
       acc[row.set_id].rows.push(row);
 
       return acc;
     }, {});
 
-    return Object.values(grouped);
+    return Object.values(grouped) as SetStats[];
   }
+
+  return [];
 };
 
+/** Fetches all pair stats and triggers a csv download  */
 export const downloadStatsCsv = async () => {
   const stats = await fetchStats();
 

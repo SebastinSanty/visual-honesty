@@ -20,7 +20,7 @@ import {
 } from "../../lib/study_data";
 
 /**
- * Interface for viewing, uploading and deleting stimuli and stimuli sets
+ * Interface for viewing and downloading study data broken down on a per-pair basis.
  * @component
  */
 export function ResultsViewer() {

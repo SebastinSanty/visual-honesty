@@ -11,7 +11,14 @@ export interface ParticipantResults {
   accuracy_percentage: number;
 }
 
-export const fetchResults = async (session: string) => {
+/**
+ * Gets basic perfomance statistics for a specifed participant
+ * @param session - unique id of user to fetch data for
+ * @returns Promise<ParticipantResults> for the specified participant
+ */
+export const fetchResults = async (
+  session: string,
+): Promise<ParticipantResults> => {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.rpc("get_participant_results", {
     target_uuid: session,
