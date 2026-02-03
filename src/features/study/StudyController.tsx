@@ -1,4 +1,4 @@
-import { Loader } from "@mantine/core";
+import { Box, Container, LoadingOverlay, Stack } from "@mantine/core";
 import { useState } from "react";
 import {
   fetchNextPair,
@@ -7,6 +7,7 @@ import {
 } from "../../lib/stimulus";
 import { Landing } from "./Landing";
 import { Results } from "./Results";
+import { StudyProgress } from "./StudyProgress";
 import { Trial } from "./Trial";
 
 interface StudyControllerProps {
@@ -32,9 +33,12 @@ export function StudyController({ session }: StudyControllerProps) {
   // Loading state for async operations
   const [loading, setLoading] = useState<boolean>(false);
   // Current stage in study flow
-  const [stage, setStage] = useState<"landing" | "survey" | "complete">(
+  const [stage, setStage] = useState<"landing" | "survey" | "results">(
     "landing",
   );
+
+  const [trial, setTrial] = useState<number>(0);
+  const [totalTrials, setTotalTrials] = useState<number>(0);
   const [stimulus, setStimulus] = useState<StimulusPair | null>(null);
 
   /**
@@ -47,7 +51,18 @@ export function StudyController({ session }: StudyControllerProps) {
       throw new Error("cannot submit answer for invalid stimulus");
     }
     await submitResponse(session, stimulus, choice);
-    setStimulus(await fetchNextPair(session));
+    if (trial < totalTrials) {
+      const next = await fetchNextPair(session);
+      if (next) {
+        setStimulus(next);
+        setTrial(trial + 1);
+      } else {
+        setStage("results");
+      }
+    } else {
+      setStage("results");
+    }
+
     setLoading(false);
   };
 
@@ -57,37 +72,38 @@ export function StudyController({ session }: StudyControllerProps) {
     setStimulus(nextPair);
     if (nextPair) {
       setStage("survey");
+      setTrial(1);
+      setTotalTrials(
+        nextPair.sets_remaining > 20 ? 20 : nextPair.sets_remaining,
+      );
     } else {
-      setStage("complete");
+      setStage("results");
     }
     setLoading(false);
   };
 
-  // Show loader while submitting (prevents multiple API calls)
-  if (loading) {
-    return (
-      <Loader
-        size="xl"
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-        }}
-      />
-    );
-  }
+  let page;
 
-  // Show landing page initially
   if (stage === "landing") {
-    return <Landing handleStart={() => handleStart()} />;
+    page = <Landing handleStart={() => handleStart()} />;
+  } else if (stage === "survey" && stimulus) {
+    page = <Trial stimulus={stimulus} onSelect={handleSelect}></Trial>;
+  } else {
+    page = <Results session={session}></Results>;
   }
 
-  // Show survey flow
-  if (stage === "survey" && stimulus) {
-    return <Trial stimulus={stimulus} onSelect={handleSelect}></Trial>;
-  }
-
-  // Show results page when done
-  return <Results session={session}></Results>;
+  return (
+    <Stack>
+      <Container maw="80%" miw="60%" p="lg">
+        <StudyProgress
+          num_trials={totalTrials}
+          stage={stage === "survey" ? trial : stage}
+        ></StudyProgress>
+      </Container>
+      <Box pos="relative">
+        <LoadingOverlay visible={loading}></LoadingOverlay>
+        {page}
+      </Box>
+    </Stack>
+  );
 }
