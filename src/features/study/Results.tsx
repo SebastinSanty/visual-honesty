@@ -77,7 +77,7 @@ export function Results({ session }: ResultsProps) {
                 By displaying tradionally 2D charts in 3D, we were able to
                 distort the visualization, making some regions seem bigger than
                 others. While this is accurate from a 3D perspective, when seen
-                from a single viewpoint in 2D in misrepresents the data.
+                from a single viewpoint in 2D it misrepresents the data.
               </ListItem>
               <Space h="sm"></Space>
               <ListItem>
@@ -95,6 +95,7 @@ export function Results({ session }: ResultsProps) {
                 data visualized on its own may still be accurate, it might be
                 interpreted incorrectly since there is missing context.
               </ListItem>
+              <Space h="xl"></Space>
             </List>
           </Stack>
         </Container>
