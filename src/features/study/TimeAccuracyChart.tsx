@@ -12,8 +12,11 @@ import {
 } from "recharts";
 import type { TimeAccuracyBenchmarkData } from "../../lib/participant_results";
 
-interface Props {
+interface TAChartProps {
+  /** Benchmark data to display curve */
   data: TimeAccuracyBenchmarkData;
+
+  /** Current user data to display as point */
   currentUser: { time: number; accuracy: number };
 }
 
@@ -21,7 +24,7 @@ interface Props {
  * A line chart showing a benchmark curve of the relationship between time and accuracy over a participant dataset
  * @component
  */
-export function TimeAccuracyChart({ data, currentUser }: Props) {
+export function TimeAccuracyChart({ data, currentUser }: TAChartProps) {
   // Transform data: convert ms to seconds
   const chartData = data.trend.map((d) => ({
     ...d,
