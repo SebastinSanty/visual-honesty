@@ -1,5 +1,5 @@
 import { Box, Container, LoadingOverlay, Stack } from "@mantine/core";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   fetchNextPair,
   submitResponse,
@@ -7,39 +7,48 @@ import {
 } from "../../lib/stimulus";
 import { Landing } from "./Landing";
 import { Results } from "./Results";
+import { useSessionContext } from "./session/useSessionContext";
 import { StudyProgress } from "./StudyProgress";
 import { Trial } from "./Trial";
-
-interface StudyControllerProps {
-  /**
-   * Unique session identifier for the participant.
-   * Prevents duplicate submissions and helps group responses together in the db.
-   */
-  session: string;
-
-  /**
-   * Whether the participant has already taken the survey or not.
-   * Prevents duplicate submissions to the database to save resources.
-   */
-  hasTaken?: boolean;
-}
 
 /**
  * Main Visual Honesty survey component.
  * Handles trial progression, user selections, and data submission to Supabase.
  * @component
  */
-export function StudyController({ session }: StudyControllerProps) {
+export function StudyController() {
+  const { sessionId } = useSessionContext();
   // Loading state for async operations
   const [loading, setLoading] = useState<boolean>(false);
   // Current stage in study flow
   const [stage, setStage] = useState<"landing" | "survey" | "results">(
     "landing",
   );
-
+  const trialStartTime = useRef<number | null>(null);
   const [trial, setTrial] = useState<number>(0);
   const [totalTrials, setTotalTrials] = useState<number>(0);
   const [stimulus, setStimulus] = useState<StimulusPair | null>(null);
+  /**
+   * Preloads an image into the browser cache
+   * @param url - url of image to preload
+   */
+  const preloadImage = (url: string) =>
+    new Promise<void>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = reject;
+      img.src = url;
+    });
+
+  /**
+   * Preloads the images for a stimulus pair
+   * @param pair - StimulusPair to preload
+   */
+  const preloadStimulus = (pair: StimulusPair) =>
+    Promise.all([
+      preloadImage(pair.left.image_url),
+      preloadImage(pair.right.image_url),
+    ]);
 
   /**
    * Processes user selection for the current trial and sends results to Supabase.
@@ -50,12 +59,20 @@ export function StudyController({ session }: StudyControllerProps) {
     if (!stimulus) {
       throw new Error("cannot submit answer for invalid stimulus");
     }
-    await submitResponse(session, stimulus, choice);
+    const timeTaken = trialStartTime.current
+      ? performance.now() - trialStartTime.current
+      : null;
+    if (!timeTaken) {
+      throw new Error("timekeeping error!");
+    }
+    await submitResponse(sessionId, stimulus, choice, timeTaken);
     if (trial < totalTrials) {
-      const next = await fetchNextPair(session);
+      const next = await fetchNextPair(sessionId);
       if (next) {
+        await preloadStimulus(next);
         setStimulus(next);
         setTrial(trial + 1);
+        trialStartTime.current = performance.now();
       } else {
         setStage("results");
       }
@@ -68,14 +85,16 @@ export function StudyController({ session }: StudyControllerProps) {
 
   const handleStart = async () => {
     setLoading(true);
-    const nextPair = await fetchNextPair(session);
-    setStimulus(nextPair);
+    const nextPair = await fetchNextPair(sessionId);
     if (nextPair) {
+      await preloadStimulus(nextPair);
+      setStimulus(nextPair);
       setStage("survey");
       setTrial(1);
       setTotalTrials(
         nextPair.sets_remaining > 20 ? 20 : nextPair.sets_remaining,
       );
+      trialStartTime.current = performance.now();
     } else {
       setStage("results");
     }
@@ -89,7 +108,7 @@ export function StudyController({ session }: StudyControllerProps) {
   } else if (stage === "survey" && stimulus) {
     page = <Trial stimulus={stimulus} onSelect={handleSelect}></Trial>;
   } else {
-    page = <Results session={session}></Results>;
+    page = <Results></Results>;
   }
 
   return (

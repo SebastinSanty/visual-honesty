@@ -5,39 +5,61 @@ import {
   ListItem,
   Space,
   Stack,
-  Text,
   Title,
 } from "@mantine/core";
 import { useEffect, useState } from "react";
 import {
+  fetchCategoryStats,
   fetchResults,
+  fetchTimeAccuracyBenchmarks,
+  type CategoryStats,
   type ParticipantResults,
+  type TimeAccuracyBenchmarkData,
 } from "../../lib/participant_results";
+import { CategoryRadarChart } from "./CategoryRadarChart";
 import { ResultsCard } from "./ResultsCard";
-
-interface ResultsProps {
-  /** Session ID of user to fetch statistics for */
-  session: string;
-}
+import { useSessionContext } from "./session/useSessionContext";
+import { TimeAccuracyChart } from "./TimeAccuracyChart";
 
 /**
  * Results page displayed after survey completion
  * @component
  */
-export function Results({ session }: ResultsProps) {
-  const [data, setData] = useState<ParticipantResults | null>(null);
+export function Results() {
+  const { sessionId } = useSessionContext();
+  const [overallResults, setOverallResults] =
+    useState<ParticipantResults | null>(null);
+  const [categoryStats, setCategoryStats] = useState<CategoryStats[] | null>(
+    null,
+  );
+  const [timeAccuracyBenchmarkData, setTimeAccuracyBenchmarkData] =
+    useState<TimeAccuracyBenchmarkData | null>(null);
 
   useEffect(() => {
     const loadResults = async () => {
-      const results = await fetchResults(session);
-      if (results) {
-        setData(results);
-      } else {
-        alert("An error occured while trying to fetch your results!");
+      try {
+        const overall = await fetchResults(sessionId);
+        setOverallResults(overall);
+      } catch (e) {
+        console.error("Failed to load general stats", e);
+      }
+
+      try {
+        const categories = await fetchCategoryStats(sessionId);
+        setCategoryStats(categories);
+      } catch (e) {
+        console.error("Failed to load category stats", e);
+      }
+
+      try {
+        const benchmarks = await fetchTimeAccuracyBenchmarks();
+        setTimeAccuracyBenchmarkData(benchmarks);
+      } catch (e) {
+        console.error("Failed to load time/accuracy benchmarks", e);
       }
     };
     loadResults();
-  }, [session]);
+  }, [sessionId]);
 
   return (
     <>
@@ -51,15 +73,30 @@ export function Results({ session }: ResultsProps) {
       <main>
         <Container size="sm" px="md">
           <Stack gap="md">
-            <Text>
-              Thank you for completing our test! We hope you enjoyed seeing some
-              of the ways that data visualizations can deceive you. Some
-              statistics about your performance can be seen below, and we will
-              likely add more in the future!
-            </Text>
             <Center>
-              <ResultsCard data={data}></ResultsCard>
+              <ResultsCard data={overallResults}></ResultsCard>
             </Center>
+            <b>Percentage correct by category:</b>
+            <Center
+              style={{
+                width: "100%",
+                aspectRatio: "2 / 1",
+              }}
+            >
+              <CategoryRadarChart data={categoryStats ? categoryStats : []} />
+            </Center>
+            {overallResults && timeAccuracyBenchmarkData && (
+              <>
+                <b>How do you compare?</b>
+                <TimeAccuracyChart
+                  data={timeAccuracyBenchmarkData}
+                  currentUser={{
+                    time: overallResults.average_time,
+                    accuracy: overallResults.accuracy_percentage,
+                  }}
+                />
+              </>
+            )}
             <b>
               Still Curious? Here are some of the ways we tried to deceive you:
             </b>
@@ -77,7 +114,7 @@ export function Results({ session }: ResultsProps) {
                 By displaying tradionally 2D charts in 3D, we were able to
                 distort the visualization, making some regions seem bigger than
                 others. While this is accurate from a 3D perspective, when seen
-                from a single viewpoint in 2D in misrepresents the data.
+                from a single viewpoint in 2D it misrepresents the data.
               </ListItem>
               <Space h="sm"></Space>
               <ListItem>
@@ -95,6 +132,7 @@ export function Results({ session }: ResultsProps) {
                 data visualized on its own may still be accurate, it might be
                 interpreted incorrectly since there is missing context.
               </ListItem>
+              <Space h="xl"></Space>
             </List>
           </Stack>
         </Container>
