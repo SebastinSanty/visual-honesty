@@ -5,18 +5,19 @@ import {
   submitResponse,
   type StimulusPair,
 } from "../../lib/stimulus";
+import { StudyProgress } from "../study/StudyProgress";
+import { Trial } from "../study/Trial";
 import { Landing } from "./Landing";
 import { Results } from "./Results";
 import { useSessionContext } from "./session/useSessionContext";
-import { StudyProgress } from "./StudyProgress";
-import { Trial } from "./Trial";
 
 /**
- * Main Visual Honesty survey component.
- * Handles trial progression, user selections, and data submission to Supabase.
+ * AI Study Controller.
+ * Currently duplicates the logic of StudyController but allows for future AI-specific overrides.
+ * Uses shared UI components from the main study feature.
  * @component
  */
-export function StudyController() {
+export function AiStudyController() {
   const { sessionId, initializeSession } = useSessionContext();
   // Loading state for async operations
   const [loading, setLoading] = useState<boolean>(false);
@@ -83,33 +84,32 @@ export function StudyController() {
     setLoading(false);
   };
 
-  const handleStart = async () => {
+  const handleStart = async (model: string) => {
     setLoading(true);
-    if (!sessionId) {
-      await initializeSession();
+    try {
+      const newId = await initializeSession(model);
+      const nextPair = await fetchNextPair(newId);
+      if (nextPair) {
+        await preloadStimulus(nextPair);
+        setStimulus(nextPair);
+        setStage("survey");
+        setTrial(1);
+        setTotalTrials(
+          nextPair.sets_remaining > 20 ? 20 : nextPair.sets_remaining,
+        );
+        trialStartTime.current = performance.now();
+      } else {
+        setStage("results");
+      }
+    } finally {
+      setLoading(false);
     }
-    const currentSessionId = localStorage.getItem("vh_session_id") || "";
-
-    const nextPair = await fetchNextPair(currentSessionId);
-    if (nextPair) {
-      await preloadStimulus(nextPair);
-      setStimulus(nextPair);
-      setStage("survey");
-      setTrial(1);
-      setTotalTrials(
-        nextPair.sets_remaining > 20 ? 20 : nextPair.sets_remaining,
-      );
-      trialStartTime.current = performance.now();
-    } else {
-      setStage("results");
-    }
-    setLoading(false);
   };
 
   let page;
 
   if (stage === "landing") {
-    page = <Landing handleStart={() => handleStart()} />;
+    page = <Landing handleStart={handleStart} />;
   } else if (stage === "survey" && stimulus) {
     page = <Trial stimulus={stimulus} onSelect={handleSelect}></Trial>;
   } else {
