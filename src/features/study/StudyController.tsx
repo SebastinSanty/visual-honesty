@@ -1,4 +1,13 @@
-import { Box, Container, LoadingOverlay, Stack } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Container,
+  LoadingOverlay,
+  Modal,
+  Space,
+  Stack,
+  Text,
+} from "@mantine/core";
 import { useRef, useState } from "react";
 import {
   fetchNextPair,
@@ -17,6 +26,7 @@ import { Trial } from "./Trial";
  * @component
  */
 export function StudyController() {
+  // Participant session
   const { sessionId, initializeSession } = useSessionContext();
   // Loading state for async operations
   const [loading, setLoading] = useState<boolean>(false);
@@ -28,6 +38,7 @@ export function StudyController() {
   const [trial, setTrial] = useState<number>(0);
   const [totalTrials, setTotalTrials] = useState<number>(0);
   const [stimulus, setStimulus] = useState<StimulusPair | null>(null);
+  const [waitingContinue, setWaitingContinue] = useState(false);
   /**
    * Preloads an image into the browser cache
    * @param url - url of image to preload
@@ -52,9 +63,9 @@ export function StudyController() {
 
   /**
    * Processes user selection for the current trial and sends results to Supabase.
-   * @param {'left' | 'right'} choice - the graph the user selected (as being deceptive)
+   * @param {'left' | 'right' | 'none'} choice - the graph the user selected (as being deceptive)
    */
-  const handleSelect = async (choice: "left" | "right") => {
+  const handleSelect = async (choice: "left" | "right" | "none") => {
     setLoading(true);
     if (!stimulus) {
       throw new Error("cannot submit answer for invalid stimulus");
@@ -66,23 +77,28 @@ export function StudyController() {
       throw new Error("timekeeping error!");
     }
     await submitResponse(sessionId, stimulus, choice, timeTaken);
-    if (trial < totalTrials) {
-      const next = await fetchNextPair(sessionId);
-      if (next) {
-        await preloadStimulus(next);
-        setStimulus(next);
-        setTrial(trial + 1);
-        trialStartTime.current = performance.now();
+    if (choice === "none") {
+      // Pause the test flow if the user timed out on the last question
+      setWaitingContinue(true);
+    } else {
+      if (trial < totalTrials) {
+        const next = await fetchNextPair(sessionId);
+        if (next) {
+          await preloadStimulus(next);
+          setStimulus(next);
+          setTrial(trial + 1);
+          trialStartTime.current = performance.now();
+        } else {
+          setStage("results");
+        }
       } else {
         setStage("results");
       }
-    } else {
-      setStage("results");
     }
-
     setLoading(false);
   };
 
+  /** Starts the test and loads the first image pair */
   const handleStart = async () => {
     setLoading(true);
     if (!sessionId) {
@@ -106,12 +122,41 @@ export function StudyController() {
     setLoading(false);
   };
 
+  /**
+   * If the last trial ended in a timeout, a modal shows and we pause the flow.
+   * When run, this function continues the test flow.
+   */
+  const continueAfterTimeout = async () => {
+    setWaitingContinue(false);
+    setLoading(true);
+    if (trial < totalTrials) {
+      const next = await fetchNextPair(sessionId);
+      if (next) {
+        await preloadStimulus(next);
+        setStimulus(next);
+        setTrial(trial + 1);
+        trialStartTime.current = performance.now();
+      } else {
+        setStage("results");
+      }
+    } else {
+      setStage("results");
+    }
+    setLoading(false);
+  };
+
   let page;
 
   if (stage === "landing") {
     page = <Landing handleStart={() => handleStart()} />;
   } else if (stage === "survey" && stimulus) {
-    page = <Trial stimulus={stimulus} onSelect={handleSelect}></Trial>;
+    page = (
+      <Trial
+        key={stimulus.trial_id}
+        stimulus={stimulus}
+        onSelect={handleSelect}
+      ></Trial>
+    );
   } else {
     page = <Results></Results>;
   }
@@ -123,11 +168,24 @@ export function StudyController() {
           num_trials={totalTrials}
           stage={stage === "survey" ? trial : stage}
         ></StudyProgress>
+        {/* When timeout occurs we pause here before loading next stimulus */}
+        <Modal
+          opened={waitingContinue}
+          onClose={() => {}}
+          withCloseButton={false}
+          centered
+        >
+          <Text mb="md">You ran out of time.</Text>
+          <Button fullWidth onClick={continueAfterTimeout}>
+            Continue
+          </Button>
+        </Modal>
+        <Space h="md"></Space>
+        <Box pos="relative">
+          <LoadingOverlay visible={loading}></LoadingOverlay>
+          {page}
+        </Box>
       </Container>
-      <Box pos="relative">
-        <LoadingOverlay visible={loading}></LoadingOverlay>
-        {page}
-      </Box>
     </Stack>
   );
 }
