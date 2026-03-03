@@ -146,6 +146,7 @@ export function StudyController() {
   };
 
   let page;
+  const isLanding = stage === "landing";
 
   if (stage === "landing") {
     page = <Landing handleStart={() => handleStart()} />;
@@ -163,11 +164,21 @@ export function StudyController() {
 
   return (
     <Stack gap="0">
-      <Container maw="80%" miw="60%" p="md">
-        <StudyProgress
-          num_trials={totalTrials}
-          stage={stage === "survey" ? trial : stage}
-        ></StudyProgress>
+      <Container
+        maw={isLanding ? undefined : "80%"}
+        miw={isLanding ? undefined : "60%"}
+        p={isLanding ? 0 : "md"}
+        fluid={isLanding}
+      >
+        <Box
+          p={isLanding ? "md" : 0}
+          className={isLanding ? "pixel-progress" : undefined}
+        >
+          <StudyProgress
+            num_trials={totalTrials}
+            stage={stage === "survey" ? trial : stage}
+          ></StudyProgress>
+        </Box>
         {/* When timeout occurs we pause here before loading next stimulus */}
         <Modal
           opened={waitingContinue}
@@ -180,7 +191,7 @@ export function StudyController() {
             Continue
           </Button>
         </Modal>
-        <Space h="md"></Space>
+        <Space h={isLanding ? 0 : "md"}></Space>
         <Box pos="relative">
           <LoadingOverlay visible={loading}></LoadingOverlay>
           {page}
