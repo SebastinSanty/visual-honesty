@@ -4,7 +4,6 @@ import {
   Container,
   LoadingOverlay,
   Modal,
-  Space,
   Stack,
   Text,
 } from "@mantine/core";
@@ -146,7 +145,6 @@ export function StudyController() {
   };
 
   let page;
-  const isLanding = stage === "landing";
 
   if (stage === "landing") {
     page = <Landing handleStart={() => handleStart()} />;
@@ -164,16 +162,8 @@ export function StudyController() {
 
   return (
     <Stack gap="0">
-      <Container
-        maw={isLanding ? undefined : "80%"}
-        miw={isLanding ? undefined : "60%"}
-        p={isLanding ? 0 : "md"}
-        fluid={isLanding}
-      >
-        <Box
-          p={isLanding ? "md" : 0}
-          className={isLanding ? "pixel-progress" : undefined}
-        >
+      <Container fluid>
+        <Box p={"md"} className={"pixel-progress"}>
           <StudyProgress
             num_trials={totalTrials}
             stage={stage === "survey" ? trial : stage}
@@ -191,7 +181,6 @@ export function StudyController() {
             Continue
           </Button>
         </Modal>
-        <Space h={isLanding ? 0 : "md"}></Space>
         <Box pos="relative">
           <LoadingOverlay visible={loading}></LoadingOverlay>
           {page}
